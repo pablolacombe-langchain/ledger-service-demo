@@ -21,13 +21,9 @@ uv run uvicorn ledger_service.api:app --reload   # http://127.0.0.1:8000/docs
 
 ## Demo runbook (do the night before)
 
-1. **Push to GitHub.** Create a repo in an org/account the Open SWE GitHub App is installed on and that is in the deployment's allowed orgs.
-   ```bash
-   git init && git add . && git commit -m "ledger-service demo"
-   gh repo create <org>/ledger-service-demo --public --source . --push
-   ```
-2. **Open the tickets as issues:** `scripts/open_tickets.sh`.
-3. **Pre-run one ticket** so a finished thread, trace and PR exist before the call (sandbox + model time is 5–15 min): comment `@openswe` on the LEDGER-142 issue, or start it from the Open SWE dashboard with `repo:<org>/ledger-service-demo`.
+1. **Push to GitHub.** Done: [pablolacombe-langchain/ledger-service-demo](https://github.com/pablolacombe-langchain/ledger-service-demo). The Open SWE GitHub App must be installed on this account and the repo must be in the deployment's allowed orgs.
+2. **Open the tickets as issues:** `gh label create demo` once, then `scripts/open_tickets.sh`. Done: issues #1–#3.
+3. **Pre-run one ticket** so a finished thread, trace and PR exist before the call (sandbox + model time is 5–15 min): comment `@openswe` on the LEDGER-142 issue, or start it from the Open SWE dashboard with `repo:pablolacombe-langchain/ledger-service-demo`.
 4. **Check the trace** in LangSmith (`open-swe-agent` project): plan → `execute` calls in the sandbox (`uv sync`, `pytest`) → file edits → PR. Bookmark it.
 5. **During the call**, kick off LEDGER-157 live, then switch to the pre-run LEDGER-142 thread/trace/PR while it works. Come back at the end to show progress.
 
