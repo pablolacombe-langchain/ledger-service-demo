@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -70,3 +72,20 @@ def test_statement_lists_transactions(client: TestClient) -> None:
 def test_statement_rejects_bad_since(client: TestClient) -> None:
     a = _open(client, "Ada")
     assert client.get(f"/accounts/{a}/statement", params={"since": "yesterday"}).status_code == 422
+
+
+def test_statement_since_filters_transactions(client: TestClient) -> None:
+    a = _open(client, "Ada")
+    client.post(f"/accounts/{a}/deposits", json={"amount": 5, "memo": "one"})
+    second = client.post(f"/accounts/{a}/deposits", json={"amount": 6, "memo": "two"}).json()
+    # Make the ordering of timestamps deterministic regardless of clock resolution.
+    first_tx, second_tx = api.ledger._transactions
+    first_tx.created_at = second_tx.created_at - timedelta(seconds=5)
+
+    resp = client.get(f"/accounts/{a}/statement", params={"since": second["created_at"]})
+    assert resp.status_code == 200
+    assert [tx["memo"] for tx in resp.json()] == ["two"]
+
+    # Without ``since`` the full history is still returned.
+    full = client.get(f"/accounts/{a}/statement")
+    assert [tx["memo"] for tx in full.json()] == ["two", "one"]
