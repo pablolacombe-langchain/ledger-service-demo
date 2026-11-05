@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta, timezone
+
 import pytest
 
 from ledger_service import (
@@ -7,7 +9,7 @@ from ledger_service import (
     LedgerError,
     UnknownAccount,
 )
-from ledger_service.ledger import DAILY_TRANSFER_LIMIT
+from ledger_service.ledger import DAILY_TRANSFER_LIMIT, parse_since
 
 
 @pytest.fixture
@@ -77,3 +79,30 @@ def test_statement_is_newest_first(ledger: Ledger) -> None:
     second = ledger.deposit(a.id, 2, memo="second")
     txs = ledger.statement(a.id)
     assert [tx.id for tx in txs] == [second.id, first.id]
+
+
+def test_statement_since_is_inclusive_and_newest_first(ledger: Ledger) -> None:
+    a = ledger.open_account("Ada")
+    first = ledger.deposit(a.id, 1, memo="first")
+    second = ledger.deposit(a.id, 2, memo="second")
+    third = ledger.deposit(a.id, 3, memo="third")
+    base = first.created_at
+    second.created_at = base + timedelta(seconds=10)
+    third.created_at = base + timedelta(seconds=20)
+
+    txs = ledger.statement(a.id, since=second.created_at)
+    assert [tx.id for tx in txs] == [third.id, second.id]
+
+    after_all = ledger.statement(a.id, since=third.created_at + timedelta(seconds=1))
+    assert after_all == []
+
+
+def test_statement_since_accepts_parsed_naive_timestamp(ledger: Ledger) -> None:
+    a = ledger.open_account("Ada")
+    old = ledger.deposit(a.id, 1)
+    new = ledger.deposit(a.id, 2)
+    old.created_at = datetime(2024, 1, 1, tzinfo=timezone.utc)
+    new.created_at = datetime(2024, 1, 3, tzinfo=timezone.utc)
+
+    txs = ledger.statement(a.id, since=parse_since("2024-01-02T00:00:00"))
+    assert [tx.id for tx in txs] == [new.id]

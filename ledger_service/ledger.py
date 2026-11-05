@@ -105,10 +105,13 @@ class Ledger:
     def statement(self, account_id: str, since: datetime | None = None) -> list[Transaction]:
         """Return the account's transactions, newest first.
 
-        ``since`` is accepted so callers can request a partial statement.
+        If ``since`` is given, only transactions with ``created_at >= since`` are
+        returned (inclusive). ``since`` must be timezone-aware; see ``parse_since``.
         """
         self.get_account(account_id)
         txs = [tx for tx in self._transactions if tx.account_id == account_id]
+        if since is not None:
+            txs = [tx for tx in txs if tx.created_at >= since]
         # Transactions are appended in creation order, so reversing gives newest-first
         # without relying on timestamp resolution.
         return list(reversed(txs))
